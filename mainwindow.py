@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'mainwindow.ui'
+# Form implementation generated from reading ui file 'Z:\wwwroot\Document\代码\Python\Qiniu Helper\mainwindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.11.3
 #
@@ -243,7 +243,7 @@ class Ui_MainWindow(object):
         item = self.tableWidget_Settings.verticalHeaderItem(2)
         item.setText(_translate("MainWindow", "*空间名称(Bucket)"))
         item = self.tableWidget_Settings.verticalHeaderItem(3)
-        item.setText(_translate("MainWindow", "域名(Domain)"))
+        item.setText(_translate("MainWindow", "*域名(Domain)"))
         item = self.tableWidget_Settings.verticalHeaderItem(4)
         item.setText(_translate("MainWindow", "文件前缀(Prefix)"))
         item = self.tableWidget_Settings.horizontalHeaderItem(0)

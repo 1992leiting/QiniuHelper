@@ -113,7 +113,7 @@
      </row>
      <row>
       <property name="text">
-       <string>域名(Domain)</string>
+       <string>*域名(Domain)</string>
       </property>
       <property name="font">
        <font>

@@ -316,10 +316,21 @@ class MainUI(MW):
         self.action_About.triggered.connect(self.show_about)
         self.action_Exit.triggered.connect(MainWindow.close)
 
+        '''
+        读取设置，填入tableWidget
+        '''
         # self.show_statusbar_message('读取ini...')
         # self.thread_prepare_settings = ThreadHandleIniSettings()
         # self.thread_prepare_settings.start()
         self.handle_settings()
+
+        '''
+        处理自动锁定
+         '''
+        print('auto_lock_flag: %d' % auto_lock_flag)
+        if auto_lock_flag:
+            print('auto lock!')
+            self.lock()
 
     '''
     处理ini设置
@@ -332,13 +343,6 @@ class MainUI(MW):
         self.tableWidget_Settings.item(2, 0).setText(self.settings['bucket'])
         self.tableWidget_Settings.item(3, 0).setText(self.settings['domain'])
         self.tableWidget_Settings.item(4, 0).setText(self.settings['prefix'])
-        '''
-        处理自动锁定
-        '''
-        print('auto_lock_flag: %d' % auto_lock_flag)
-        if auto_lock_flag:
-            print('auto lock!')
-            self.lock()
 
     '''
     锁定设置
@@ -358,7 +362,7 @@ class MainUI(MW):
                                             self.tableWidget_Settings.item(3, 0).text(), \
                                             self.tableWidget_Settings.item(4, 0).text()
             # 检查必填数据
-            if ak == '' or sk == '' or bucket == '':
+            if ak == '' or sk == '' or bucket == '' or domain == '':
                 # self.statusbar.showMessage('缺少必填参数项!')
                 self.show_statusbar_message('缺少必填参数项!')
                 self.lock_flag = 0
