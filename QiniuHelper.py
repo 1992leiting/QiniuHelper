@@ -531,7 +531,6 @@ class MainUI(MW):
                                                     QtWidgets.QMessageBox.Ok)
                 self.ask_upl_cbimg_flag = 0  # 只有当Qmessage的按钮被点击之后这一步才会执行
                 if bt == QtWidgets.QMessageBox.Ok:
-                    # print('Save img from clipboard')
                     self.clipboard_option('save_image', '')
                 else:
                     return
