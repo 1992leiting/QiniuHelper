@@ -249,6 +249,7 @@ class MainUI(MW):
         self.widget_msg = None
         self.timer = QtCore.QTimer()
         self.lineEdit_DragDrop = None
+        self.ask_upl_cbimg_flag = 0
 
     def setupFunction(self, MainWindow):
         '''
@@ -315,9 +316,10 @@ class MainUI(MW):
         self.action_About.triggered.connect(self.show_about)
         self.action_Exit.triggered.connect(MainWindow.close)
 
-        self.show_statusbar_message('读取ini...')
-        self.thread_prepare_settings = ThreadHandleIniSettings()
-        self.thread_prepare_settings.start()
+        # self.show_statusbar_message('读取ini...')
+        # self.thread_prepare_settings = ThreadHandleIniSettings()
+        # self.thread_prepare_settings.start()
+        self.handle_settings()
 
     '''
     处理ini设置
@@ -330,6 +332,13 @@ class MainUI(MW):
         self.tableWidget_Settings.item(2, 0).setText(self.settings['bucket'])
         self.tableWidget_Settings.item(3, 0).setText(self.settings['domain'])
         self.tableWidget_Settings.item(4, 0).setText(self.settings['prefix'])
+        '''
+        处理自动锁定
+        '''
+        print('auto_lock_flag: %d' % auto_lock_flag)
+        if auto_lock_flag:
+            print('auto lock!')
+            self.lock()
 
     '''
     锁定设置
@@ -337,9 +346,10 @@ class MainUI(MW):
     def lock(self):
         global ak, sk, bucket, domain, prefix
         self.lock_flag = ~self.lock_flag
-
+        print('enter lock(), lock_flag: %d' % self.lock_flag)
         # 如果是锁定状态
         if self.lock_flag:
+            print('now it\'s locked!')
             # 读取参数
             self.tableWidget_Settings.setCurrentItem(None)
             ak, sk, bucket, domain, prefix = self.tableWidget_Settings.item(0, 0).text(), \
@@ -379,6 +389,7 @@ class MainUI(MW):
             # self.statusbar.showMessage('参数已录入.')
             self.show_statusbar_message('参数已录入')
             self.refresh_file_list()
+            print('set lock OK!')
 
         # 如果不是锁定状态
         else:
@@ -501,20 +512,25 @@ class MainUI(MW):
     '''
     def monitor_clipboard(self):
         # 如果当前状态不是锁定的，则不监控动作为空
-        if not self.lock_flag:
+        if not self.lock_flag or not monitor_clipboard_flag:
             return
         if self.check_clipboard_image():
             print('Img copied')
-            bt = QtWidgets.QMessageBox.question(self.widget_msg,
-                                                '提示',
-                                                '是否上传剪贴板图片?',
-                                                QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel,
-                                                QtWidgets.QMessageBox.Ok)
-            if bt == QtWidgets.QMessageBox.Ok:
-                # print('Save img from clipboard')
-                self.clipboard_option('save_image', '')
-            else:
-                return
+            # 设置ask_upl_cbimg_flag标志位，表示当前是否有窗口询问是否上传剪贴板图片
+            # 如果已经有询问窗口，则不会再打开新的询问窗口
+            if not self.ask_upl_cbimg_flag:
+                self.ask_upl_cbimg_flag = -1
+                bt = QtWidgets.QMessageBox.question(self.widget_msg,
+                                                    '提示',
+                                                    '是否上传剪贴板图片?',
+                                                    QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel,
+                                                    QtWidgets.QMessageBox.Ok)
+                self.ask_upl_cbimg_flag = 0  # 只有当Qmessage的按钮被点击之后这一步才会执行
+                if bt == QtWidgets.QMessageBox.Ok:
+                    # print('Save img from clipboard')
+                    self.clipboard_option('save_image', '')
+                else:
+                    return
 
     def check_clipboard_image(self):
         md = self.clipboard.mimeData()
