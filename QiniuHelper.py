@@ -7,6 +7,7 @@ import datetime
 from PIL import ImageGrab
 from mainwindow_st import Ui_MainWindow_setting as MWST
 import os
+import time
 
 '''
 全局变量
@@ -79,12 +80,8 @@ def upload_file(key, local_file):
         rt = qnapi.qiniu_upload(ak, sk, bucket, prefix, key, local_file)
     except KeyError as e:
         ui.show_statusbar_message('检查空间名称发现错误,请检查设置是否正确!')
+        print(e)
         return
-    '''try:
-        rt = qnapi.qiniu_upload(ak, sk, bucket, prefix, key, local_file)
-    except Exception as e:
-        local_file = '/' + local_file
-        rt = qnapi.qiniu_upload(ak, sk, bucket, prefix, key, local_file)'''
     ui.refresh_file_list()
     if rt is None:
         # ui.show_statusbar_message('上传成功,文件列表已刷新')
@@ -93,19 +90,7 @@ def upload_file(key, local_file):
         ui.show_statusbar_message('上传出现异常!')
         return
     # 上传完成后根据设置复制外链或者MD链接
-    if auto_copy_flag:
-        if domain == '' and domain is  None:
-            ui.show_statusbar_message('没有提供域名，无法复制相关链接')
-            return
-        if auto_copy_content == 'Markdown':
-            ui.link_option('md', prefix+'/'+file_name)
-            ui.show_statusbar_message('文件上传成功,Markdown链接已拷贝到剪贴板')
-        elif auto_copy_content == 'Link':
-            ui.link_option('link', prefix+'/'+file_name)
-            ui.show_statusbar_message('文件上传成功,外链已拷贝到剪贴板')
-        else:
-            print('copy content error: ' + auto_copy_content)
-            ui.show_statusbar_message('拷贝链接参数错误!')
+    ui.handle_auto_copy(key)
 
 
 class ThreadHandleIniSettings(QtCore.QThread):
@@ -245,11 +230,13 @@ class MainUI(MW):
         self.lock_buttons = None
         self.lock_table = None
         self.lock_edit = None
-        self.clipboard = None
+        self.clipboard = QtWidgets.QApplication.clipboard()
         self.widget_msg = None
-        self.timer = QtCore.QTimer()
+        self.timer_statusbar = QtCore.QTimer()
+        self.timer_clipboard = QtCore.QTimer()
         self.lineEdit_DragDrop = None
         self.ask_upl_cbimg_flag = 0
+        self.tmp_mdata = None
 
     def setupFunction(self, MainWindow):
         '''
@@ -289,8 +276,8 @@ class MainUI(MW):
         '''
         设置剪贴板监控
         '''
-        self.clipboard = QtWidgets.QApplication.clipboard()
-        self.clipboard.dataChanged.connect(self.monitor_clipboard)
+        # self.clipboard = QtWidgets.QApplication.clipboard()
+        # self.clipboard.dataChanged.connect(self.monitor_clipboard)
 
         '''
         创建消息窗口
@@ -299,9 +286,11 @@ class MainUI(MW):
         self.widget_msg.setObjectName("widget_msg")
 
         '''
-        设置定时器清空状态栏
+        设置定时器
         '''
-        self.timer.timeout.connect(lambda: self.show_statusbar_message(''))
+        self.timer_statusbar.timeout.connect(lambda: self.show_statusbar_message(''))
+        self.timer_clipboard.timeout.connect(self.monitor_clipboard)
+        self.timer_clipboard.start(3000)
 
         '''
         设置按键连接
@@ -390,7 +379,6 @@ class MainUI(MW):
             icon.addPixmap(QtGui.QPixmap("on.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
             self.pushButton_Lock.setIcon(icon)
 
-            # self.statusbar.showMessage('参数已录入.')
             self.show_statusbar_message('参数已录入')
             self.refresh_file_list()
             print('set lock OK!')
@@ -471,21 +459,22 @@ class MainUI(MW):
             qnapi.qiniu_download(ak, sk, domain, file_name)
         elif option == 'link':
             url = qnapi.qiniu_get_private_url(ak, sk, domain, file_name)
+            print('copy url: ' + url)
             self.clipboard_option('copy_text', url)
-            print(url)
         elif option == 'md':
             md_link = '![' + file_name + '](' + domain + '/' + file_name + ')'
+            print('copy md: ' + md_link)
             self.clipboard_option('copy_text', md_link)
-            print(md_link)
         else:
             print('link option para error')
 
     def clipboard_option(self, option, content):
-        clipboard = QtWidgets.QApplication.clipboard()
+        # clipboard = QtWidgets.QApplication.clipboard()
 
         # 拷贝链接到剪贴板
         if option == 'copy_text':
-            clipboard.setText(content)
+            print('copying text into clipboard...' + str(content))
+            self.clipboard.setText(content)
 
         # 保存图片并上传操作
         elif option == 'save_image':
@@ -499,29 +488,18 @@ class MainUI(MW):
             cur_time = datetime.datetime.now().strftime('%Y%m%d_%H-%M-%S')
             key = 'screenshot_' + cur_time + '.' + image_format
             print('qiniu uploading...')
-            rt = qnapi.qiniu_upload(ak, sk, bucket, prefix, key, image_file)
-            print('updating list...')
-            ui.refresh_file_list()
-            if rt is None:
-                # ui.statusbar.showMessage('上传成功, 文件列表已刷新')
-                self.show_statusbar_message('上传成功,文件列表已刷新')
-                # os.remove('tmp.bmp')
-                # self.clipboard.clear()
-            else:
-                # ui.statusbar.showMessage('上传出现异常!')
-                self.show_statusbar_message('上传出现异常!')
+            upload_file(key, image_file)
 
     '''
     监控剪贴板，如果剪贴板数据发生改变并且是图片，则询问是否上传图片
     '''
     def monitor_clipboard(self):
-        # 如果当前状态不是锁定的，则不监控动作为空
-        if not self.lock_flag or not monitor_clipboard_flag:
-            return
-        if self.check_clipboard_image():
-            print('Img copied')
-            # 设置ask_upl_cbimg_flag标志位，表示当前是否有窗口询问是否上传剪贴板图片
-            # 如果已经有询问窗口，则不会再打开新的询问窗口
+        mdata = self.clipboard.image()
+        print(mdata)
+        print(self.tmp_mdata)
+        if self.clipboard.mimeData().hasImage() and mdata != self.tmp_mdata:
+            self.tmp_mdata = mdata
+            print('Img copied!')
             if not self.ask_upl_cbimg_flag:
                 self.ask_upl_cbimg_flag = -1
                 bt = QtWidgets.QMessageBox.question(self.widget_msg,
@@ -529,11 +507,26 @@ class MainUI(MW):
                                                     '是否上传剪贴板图片?',
                                                     QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel,
                                                     QtWidgets.QMessageBox.Ok)
-                self.ask_upl_cbimg_flag = 0  # 只有当Qmessage的按钮被点击之后这一步才会执行
+                self.ask_upl_cbimg_flag = 0  # 只有当QMessageBox的按钮被点击之后这一步才会执行
                 if bt == QtWidgets.QMessageBox.Ok:
                     self.clipboard_option('save_image', '')
                 else:
                     return
+
+    def handle_auto_copy(self, key):
+        if auto_copy_flag:
+            if domain == '' and domain is None:
+                self.show_statusbar_message('没有提供域名，无法复制相关链接')
+                return
+            if auto_copy_content == 'Markdown':
+                self.link_option('md', prefix.strip('/') + '/' + key)
+                self.show_statusbar_message('文件上传成功,Markdown链接已拷贝到剪贴板')
+            elif auto_copy_content == 'Link':
+                self.link_option('link', prefix.strip('/') + '/' + key)
+                self.show_statusbar_message('文件上传成功,外链已拷贝到剪贴板')
+            else:
+                print('copy content error: ' + auto_copy_content)
+                self.show_statusbar_message('拷贝链接参数错误!')
 
     def check_clipboard_image(self):
         md = self.clipboard.mimeData()
@@ -547,7 +540,7 @@ class MainUI(MW):
 
     def show_statusbar_message(self,string):
         self.statusbar.showMessage('   ' + string)
-        self.timer.start(3000)
+        self.timer_statusbar.start(3000)
 
     def show_setting_window(self):
         MainWindow_st.show()
