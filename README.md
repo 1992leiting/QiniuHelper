@@ -59,9 +59,13 @@
 
 使用pyinstaller打包成可执行文件，因为要放入PyQt5库文件和其他依赖，体积相对于C家族编写的软件来说非常大，暂时没有办法解决。
 
-[下载地址](https://kod.leiting6.cn/index.php?share/folder&user=1&sid=rGiXqIwf#%2F%E8%BD%AF%E4%BB%B6%E5%AE%89%E8%A3%85%E5%8C%85%2FWindows%E8%BD%AF%E4%BB%B6%2FQiniuHelper%2F)
+~~[下载地址](https://kod.leiting6.cn/index.php?share/folder&user=1&sid=rGiXqIwf#%2F%E8%BD%AF%E4%BB%B6%E5%AE%89%E8%A3%85%E5%8C%85%2FWindows%E8%BD%AF%E4%BB%B6%2FQiniuHelper%2F)~~
 
-[备用下载地址](https://pan.baidu.com/s/13zg05Jv1wSW2Kt11ONdggQ)
+~~[备用下载地址](https://pan.baidu.com/s/13zg05Jv1wSW2Kt11ONdggQ)~~
+
+因为经常更新，不会每次都打包完整包，因此推荐大家自行打包或者安装python环境来运行。
+
+轻打包教程：[我的博客](https://leiting6.cn/Python%E7%9B%B8%E5%85%B3/PyQt5%E5%B0%8F%E6%8A%80%E5%B7%A7%E6%95%B4%E7%90%861%EF%BC%9APython%E9%A1%B9%E7%9B%AE%E8%BD%BB%E6%89%93%E5%8C%85%E6%88%90%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6/)
 
 ## Mac可执行文件
 
@@ -78,3 +82,9 @@ Mac上打包一直有问题，未生成可执行文件。
 - 有可能的话会增加对其他家对象存储的支持（七牛云的免费额度并不大且必须绑定个人域名）。
 
 欢迎使用并反馈问题！
+
+# 历史更新
+## 2019-01-29
+更改剪贴板监控方式，修复上传完文件后不能自动复制链接的bug（剪贴板监控间隔为3秒）
+## 2019-02-26
+修复某些设置项不生效的bug
